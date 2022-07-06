@@ -17,7 +17,11 @@ public class DiceScript : MonoBehaviour {
 		diceVelocity = rb.velocity;
 
 		if (Input.GetKeyDown (KeyCode.Space)) {
-			DiceNumberTextScript.diceNumber = 0;
+			DiceNumberTextScript.diceNumber1 = 0;
+			DiceNumberTextScript.diceNumber2 = 0;
+			DiceNumberTextScript.diceNumber3 = 0;
+			DiceNumberTextScript.diceNumber4 = 0;
+			DiceNumberTextScript.diceNumber5 = 0;
 			float dirX = Random.Range (0, 500);
 			float dirY = Random.Range (0, 500);
 			float dirZ = Random.Range (0, 500);
@@ -25,6 +29,8 @@ public class DiceScript : MonoBehaviour {
 			transform.rotation = Quaternion.identity;
 			rb.AddForce (transform.up * 500);
 			rb.AddTorque (dirX, dirY, dirZ);
+
+			Debug.Log("SPACE");
 		}
 	}
 }
