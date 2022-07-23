@@ -13,9 +13,8 @@ public class UI : MonoBehaviour
     private Text totalScoreText;
     private Text activeScoreText;
     private Text currentScoreText;
-    private Text dicesNumberText;
 
-    private Game game;
+    private Game _game;
 
     private void Awake()
     {
@@ -29,17 +28,12 @@ public class UI : MonoBehaviour
         totalScoreText = GameObject.Find("TotalScore").GetComponent<Text>();
         activeScoreText = GameObject.Find("ActiveScore").GetComponent<Text>();
         currentScoreText = GameObject.Find("CurrentScore").GetComponent<Text>();
-        dicesNumberText = GameObject.Find("DicesNumber").GetComponent<Text>();
 
-        game = GameObject.Find("Game").GetComponent<Game>();
+        _game = GameObject.Find("Game").GetComponent<Game>();
     }
 
     private void Start()
     {
-        readyButton.SetActive(false);
-        throwButton.SetActive(false);
-        saveScoreButton.SetActive(false);
-
         activePlayerText.text = "Wait...";
         totalScoreText.text = "0 :T";
         activeScoreText.text = "0 :A";
@@ -63,42 +57,63 @@ public class UI : MonoBehaviour
 
     public void Ready()
     {
-        game.Ready();
+        _game.Ready();
     }
 
     public void Throw()
     {
-        game.Throw();
+        _game.Throw();
     }
 
     public void Save()
     {
-        game.Save();
+        _game.Save();
     }
 
-    public void UpdateTextActivePlayer(string text)
+    public void OnCurrentPlayerChanged(object sender, ValueChangingEventArgs e)
     {
-        activePlayerText.text = text;
+        activePlayerText.text = _game.Players[e.NewValue].name;
     }
 
-    public void UpdateTextCount(DiceScript[] dices)
+    public void OnCurrentScoreChanged(object sender, ValueChangingEventArgs e)
     {
-        dicesNumberText.text = dices[0].GetCount().ToString() + "\n" + dices[1].GetCount().ToString() + "\n" + dices[2].GetCount().ToString()
-           + "\n" + dices[3].GetCount().ToString() + "\n" + dices[4].GetCount().ToString();
+        currentScoreText.text = e.NewValue.ToString() + " :C";
     }
 
-    public void UpdateTextCurrentScore(string text)
+    public void OnActiveScoreChanged(object sender, ValueChangingEventArgs e)
     {
-        currentScoreText.text = text + " :C";
+        activeScoreText.text = e.NewValue.ToString() + " :A";
     }
 
-    public void UpdateTextActiveScore(string text)
+    public void OnScoreChanged(object sender, ValueChangingEventArgs e)
     {
-        activeScoreText.text = text + " :A";
+        totalScoreText.text = e.NewValue.ToString() + " :T";
     }
 
-    public void UpdateTextTotalScore(string text)
+    public void OnGameStateChanged(object sender, StateChangingEventArgs e)
     {
-        activeScoreText.text = text + " :T";
+        switch (e.NewValue)
+        {
+            case Game.State.THROW:
+                SetActiveReady(false);
+                SetActiveThrow(true);
+                break;
+            case Game.State.THROWING:
+                SetActiveThrow(false);
+                break;
+            case Game.State.CHOISE:
+                SetActiveSave(true);
+                SetActiveThrow(true);
+                break;
+            case Game.State.ZERO:
+                SetActiveSave(true);
+                SetActiveThrow(false);
+                break;
+            case Game.State.SWITCH:
+                SetActiveReady(true);
+                SetActiveThrow(false);
+                SetActiveSave(false);
+                break;
+        }
     }
 }

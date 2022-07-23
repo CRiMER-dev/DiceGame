@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class DiceScript : MonoBehaviour {
 
-	static Rigidbody rb;
+	private Rigidbody rb;
 	private Transform thisTransfom;
 	private GameObject obj;
 
@@ -24,6 +24,8 @@ public class DiceScript : MonoBehaviour {
 	private Vector3 start_position;
 	private bool calc_count;
 	public void SetCalcCount(bool value) { calc_count = value; }
+	private Vector3[] inactive_pos = new Vector3[5];
+	private Vector3[] inactive_rotate = new Vector3[6];
 
 	// Use this for initialization
 	private void Awake () {
@@ -37,6 +39,19 @@ public class DiceScript : MonoBehaviour {
 		start_position = thisTransfom.position;
 		calc_count = false;
 		obj.SetActive(false);
+
+		inactive_pos[0] = new Vector3(-2.6f, 1.6f, 5.65f);
+		inactive_pos[1] = new Vector3(-1.2f, 1.6f, 5.65f);
+		inactive_pos[2] = new Vector3(0.2f, 1.6f, 5.65f);
+		inactive_pos[3] = new Vector3(1.6f, 1.6f, 5.65f);
+		inactive_pos[4] = new Vector3(3.0f, 1.6f, 5.65f);
+
+		inactive_rotate[0] = new Vector3(-180, 0, 0);
+		inactive_rotate[1] = new Vector3(0, 0, 90);
+		inactive_rotate[2] = new Vector3(90, 0, 0);
+		inactive_rotate[3] = new Vector3(-90, 0, 0);
+		inactive_rotate[4] = new Vector3(0, 0, -90);
+		inactive_rotate[5] = new Vector3(0, 0, 0);
 	}
 
     public void Reset()
@@ -45,6 +60,11 @@ public class DiceScript : MonoBehaviour {
 		thisTransfom.rotation = Quaternion.identity;
 		
 		active = true;
+		diceCount = 0;
+
+		rb.isKinematic = false;
+
+		obj.SetActive(false);
 	}
 
 	public void RegularDiceCount()
@@ -81,7 +101,7 @@ public class DiceScript : MonoBehaviour {
 		thisTransfom.rotation = Random.rotation;
 		//rb.AddForce(transform.up * 500);
 		//rb.AddTorque(dirX, dirY, dirZ);
-
+		thisTransfom.position = start_position;
 		//Debug.Log("SPACE");
 
 		diceCount = 0;
@@ -109,4 +129,15 @@ public class DiceScript : MonoBehaviour {
 
         return sleep;
     }
+
+	public void SetInactivePos(int num)
+    {
+		thisTransfom.position = inactive_pos[num];
+
+		thisTransfom.rotation = Quaternion.identity;
+
+		thisTransfom.Rotate(inactive_rotate[diceCount - 1]);
+
+		rb.isKinematic = true;
+	}
 }
