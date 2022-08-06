@@ -26,12 +26,17 @@ public class DiceScript : MonoBehaviour {
 	public void SetCalcCount(bool value) { calc_count = value; }
 	private Vector3[] inactive_pos = new Vector3[5];
 	private Vector3[] inactive_rotate = new Vector3[6];
+	private Camera _mainCamera;
+	private float _cameraZDistance;
+	public bool MoveMouse;
 
 	// Use this for initialization
 	private void Awake () {
 		rb = GetComponent<Rigidbody> ();
 		thisTransfom = GetComponent<Transform>();
 		obj = gameObject;
+		_mainCamera = Camera.main;
+		_cameraZDistance = _mainCamera.WorldToScreenPoint(thisTransfom.position).z;
 	}
 
     private void Start()
@@ -54,6 +59,23 @@ public class DiceScript : MonoBehaviour {
 		inactive_rotate[5] = new Vector3(0, 0, 0);
 	}
 
+    private void Update()
+    {
+		return;
+		/*if (!active)
+			return;
+
+		if (MoveMouse)
+        {
+			Vector3 screenPosition = new Vector3(Input.mousePosition.x, Input.mousePosition.y, _cameraZDistance);
+			//Vector3 screenPosition = new Vector3(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y"), _cameraZDistance);
+
+			Vector3 newWorldPosition = _mainCamera.ScreenToWorldPoint(screenPosition);
+
+			thisTransfom.position = newWorldPosition + start_position;
+		}*/
+    }
+
     public void Reset()
     {
 		thisTransfom.position = start_position;
@@ -61,6 +83,7 @@ public class DiceScript : MonoBehaviour {
 		
 		active = true;
 		diceCount = 0;
+		MoveMouse = true;
 
 		rb.isKinematic = false;
 

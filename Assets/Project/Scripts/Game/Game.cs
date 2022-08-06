@@ -5,7 +5,7 @@ using UnityEngine;
 
 public sealed class Game : MonoBehaviour
 {
-    public enum State{ NULL, READY, THROW, THROWING, CALC, CHOISE, ZERO, SWITCH };
+    public enum State{ NULL, READY, THROW, THROWING, CALC, CHOISE, ZERO, SWITCH, SAVE, SAMOSVAL, OVERSCORE, WIN };
     
     private List<Player> _players;
     private int _currentPlayer;
@@ -61,7 +61,7 @@ public sealed class Game : MonoBehaviour
         get { return _gameState; }
         private set
         {
-            if (ActiveScoreChanged != null)
+            if (GameStateChanged != null)
             {
                 StateChangingEventArgs vcea = new StateChangingEventArgs(_gameState, value);
                 GameStateChanged(this, vcea);
@@ -111,31 +111,84 @@ public sealed class Game : MonoBehaviour
     {
         if (CurrentScore == 0)
         {
-            if (Players[CurrentPlayer].Barrel || Players[CurrentPlayer].Score < 0)
-            {
-
-            }
-            else
+            if (!Players[CurrentPlayer].Barrel && Players[CurrentPlayer].Score >= 0)
             {
                 Players[CurrentPlayer].CountMinus++;
                 if (Players[CurrentPlayer].CountMinus >= 3)
                 {
                     Players[CurrentPlayer].CountMinus = 0;
-                    ActiveScore = 0;
+                    CurrentScore = -100;
+                }
+                else
+                {        
+                    CurrentScore = 0;
+                }
+            }
+            ActiveScore = 0;
+
+            GameState = State.OVERSCORE;
+        }
+        else
+        {
+            if (Players[CurrentPlayer].Score + ActiveScore + CurrentScore == 555)
+            {
+                ActiveScore = 0;
+                CurrentScore = 0;
+                Players[CurrentPlayer].Score = 0;
+                GameState = State.SAMOSVAL;
+                return;
+            }
+
+            if (Players[CurrentPlayer].Score + ActiveScore + CurrentScore > 1000)
+            {
+                Players[CurrentPlayer].CountMinus++;
+                if (Players[CurrentPlayer].CountMinus >= 3)
+                {
+                    Players[CurrentPlayer].CountMinus = 0;
                     CurrentScore = -100;
                 }
                 else
                 {
-                    ActiveScore = 0;
                     CurrentScore = 0;
                 }
+                ActiveScore = 0;
+
+                GameState = State.ZERO;
+                return;
             }
 
-            GameState = State.ZERO;
-        }
-        else
-        {
-            GameState = State.CHOISE;
+            if (Players[CurrentPlayer].Score + ActiveScore + CurrentScore == 1000)
+            {
+                ActiveScore = 0;
+                CurrentScore = 0;
+
+                Players[CurrentPlayer].Score = 1000;
+                GameState = State.WIN;
+                return;
+            }
+
+            if (Players[CurrentPlayer].Barrel)
+            {
+                if (_gameMath.InactiveCount != 5)
+                {
+                    if (!Players[CurrentPlayer].BarrelCheck(Players[CurrentPlayer].Score + ActiveScore + CurrentScore))
+                    {
+                        GameState = State.CHOISE;
+                    }
+                    else
+                    {
+                        ActiveScore += CurrentScore;
+                        CurrentScore = 0;
+                        GameState = State.THROW;
+                    } 
+                }
+                else
+                    GameState = State.SAVE;
+            }
+            else
+            {
+                GameState = State.CHOISE;
+            }
         }
     }
 
@@ -143,12 +196,9 @@ public sealed class Game : MonoBehaviour
         if (GameState == State.NULL)
         {
             Players.Clear();
-            Players.Add(new Player("Player 1"));
-            Players.Add(new Player("Player 2"));
+            Players.Add(new Player("Player 1",_ui));
+            Players.Add(new Player("Player 2",_ui));
             CurrentPlayer = 0;
-
-            Players[0].ScoreChanged += _ui.OnScoreChanged;
-            Players[1].ScoreChanged += _ui.OnScoreChanged;
 
             _gameMath.ResetDices();
 
@@ -187,7 +237,7 @@ public sealed class Game : MonoBehaviour
             ActiveScore += CurrentScore;
             CurrentScore = 0;
 
-            _gameState = State.THROWING;
+            GameState = State.THROWING;
 
             _gameMath.ThrowDices();
         }
@@ -195,69 +245,83 @@ public sealed class Game : MonoBehaviour
 
     public void Save()
     {
-        if (GameState == State.ZERO)
+        if (GameState == State.SAMOSVAL)
         {
-            ActiveScore += CurrentScore;
-            CurrentScore = 0;
-        }
-        else if (GameState == State.CHOISE)
-        {
-            ActiveScore += CurrentScore;
-            CurrentScore = 0;
-
             Players[CurrentPlayer].CountMinus = 0;
 
-            //CheckAdvance();
+            GameState = Game.State.SWITCH;
+            _gameMath.ResetDices();
         }
+        else if (GameState == State.OVERSCORE)
+        {
+            ActiveScore += CurrentScore;
+            CurrentScore = 0;
 
-        GameState = Game.State.SWITCH;
-        _gameMath.ResetDices();
+            if (CurrentScore != 0)
+                CheckDowngrade();
 
-        //_players[_currentPlayer].Score += _activeScore + _currentScore;
-        //_activeScore = 0;
-        //_currentScore = 0;
+            GameState = Game.State.SWITCH;
+            _gameMath.ResetDices();
+        }
+        else
+        {
+            if (GameState == State.CHOISE)
+            {
+                Players[CurrentPlayer].CountMinus = 0;
+            }
 
-        //_ui.SetActiveSave(false);
-        //_ui.SetActiveThrow(false);
-        //_ui.SetActiveReady(true);
+            ActiveScore += CurrentScore;
+            CurrentScore = 0;
 
-        //_gameState = State.SWITCH;
+            CheckDowngrade();
 
-        //_currentPlayer++;
-        //if (_currentPlayer > 1)
-        //    _currentPlayer = 0;
-
-        //inactive_count = 0;
+            GameState = Game.State.SWITCH;
+            _gameMath.ResetDices();
+        }
     }
 
-    private void CheckAdvance()
+    private void CheckDowngrade()
     {
+        List<Player> downgradePlayers = new List<Player>();
+        List<Player> comparePlayers = new List<Player>();
+
         foreach (Player player in Players)
         {
             if (player == Players[CurrentPlayer])
                 continue;
 
-            if (player.Score > Players[CurrentPlayer].Score
+            if ((player.Score > Players[CurrentPlayer].Score
                 && player.Score < Players[CurrentPlayer].Score + ActiveScore)
+                && !player.Barrel && player.Score >= 0)
             {
-                player.ScoreChanged -= _ui.OnScoreChanged;
-
-                int score = -100;
-                foreach (Player otherPlayer in Players)
-                {
-                    if (otherPlayer == player || otherPlayer == Players[CurrentPlayer])
-                        continue;
-
-
-                    if (player.Score > otherPlayer.Score && player.Score - 100 < otherPlayer.Score)
-                        score -= 100;
-                }
-                
-                player.Score += score;
-                player.CountMinus = 0;
-
-                player.ScoreChanged += _ui.OnScoreChanged;
+                downgradePlayers.Add(player);
+            }
+            else
+            {
+                comparePlayers.Add(player);
             }
         }
+
+        foreach (Player player in downgradePlayers)
+        {
+            player.ScoreChanged -= _ui.OnScoreChanged;
+            int score = Recursia(player, comparePlayers, -100);
+
+            player.Score += score;
+            player.CountMinus = 0;
+
+            player.ScoreChanged += _ui.OnScoreChanged;
+        }
+    }
+
+    private int Recursia(Player player, List<Player> comparePlayers, int oldScore)
+    {
+        int newScore = oldScore;
+        foreach (Player comparePlayer in comparePlayers)
+        {
+            if (player.Score > comparePlayer.Score && player.Score + oldScore < comparePlayer.Score)
+                newScore = Recursia(player, comparePlayers, oldScore);
+        }
+        return newScore;
     }
 }
